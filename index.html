@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6-Point Star Puzzle</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Draw the 6-Point Star Puzzle</h1>
+    <p>Draw a continuous line through all points to reveal the QR code.</p>
+
+    <canvas id="starCanvas"></canvas>
+    <div id="qrCodeContainer" style="display:none;">
+        <p>Congratulations! Here's your prize:</p>
+        <img id="qrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=YouWon!" alt="QR Code">
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
