@@ -16,7 +16,8 @@ function createPoints() {
         for (let col = 1; col <= gridSize; col++) {
             points.push({
                 x: col * cellSize,
-                y: row * cellSize
+                y: row * cellSize,
+                crossed: false
             });
         }
     }
@@ -24,19 +25,11 @@ function createPoints() {
 
 function drawPoints() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'black';
     points.forEach(point => {
+        ctx.fillStyle = point.crossed ? 'green' : 'black';
         ctx.beginPath();
         ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
         ctx.fill();
-    });
-}
-
-function getClosestPoint(pos) {
-    return points.find(point => {
-        const dx = point.x - pos.x;
-        const dy = point.y - pos.y;
-        return Math.sqrt(dx * dx + dy * dy) < 15;
     });
 }
 
@@ -46,6 +39,17 @@ function drawLine(from, to, solid = false) {
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
+    checkCrossedPoints(from, to);
+}
+
+function checkCrossedPoints(from, to) {
+    points.forEach(point => {
+        const distToLine = Math.abs((to.y - from.y) * point.x - (to.x - from.x) * point.y + to.x * from.y - to.y * from.x) / 
+            Math.sqrt(Math.pow(to.y - from.y, 2) + Math.pow(to.x - from.x, 2));
+        if (distToLine < 10) {
+            point.crossed = true;
+        }
+    });
 }
 
 function checkWinCondition() {
@@ -74,11 +78,8 @@ canvas.addEventListener('touchstart', (event) => {
 
 function handleStart(x, y) {
     if (lines.length >= maxLines) return;
-    const point = getClosestPoint({ x, y });
-    if (point) {
-        drawing = true;
-        lastPoint = point;
-    }
+    lastPoint = { x, y };
+    drawing = true;
 }
 
 canvas.addEventListener('mousemove', (event) => {
@@ -92,7 +93,7 @@ canvas.addEventListener('touchmove', (event) => {
 });
 
 function handleMove(x, y) {
-    if (!drawing || lines.length >= maxLines) return;
+    if (!drawing) return;
     drawPoints();
     lines.forEach(line => drawLine(line.from, line.to, true));
     drawLine(lastPoint, { x, y });
@@ -109,15 +110,12 @@ canvas.addEventListener('touchend', (event) => {
 });
 
 function handleEnd(x, y) {
-    if (!drawing || lines.length >= maxLines) return;
-    const point = getClosestPoint({ x, y });
-    if (point && point !== lastPoint) {
-        drawLine(lastPoint, point, true);
-        lines.push({ from: lastPoint, to: point });
-        lastPoint = point;
-        drawing = false;
-        checkWinCondition();
-    }
+    if (!drawing) return;
+    drawing = false;
+    drawLine(lastPoint, { x, y }, true);
+    lines.push({ from: lastPoint, to: { x, y } });
+    drawPoints();
+    checkWinCondition();
 }
 
 createPoints();
