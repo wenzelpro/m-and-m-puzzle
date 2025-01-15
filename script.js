@@ -53,48 +53,71 @@ function checkWinCondition() {
     }
 }
 
-canvas.addEventListener('mousedown', (event) => {
-    if (lines.length >= maxLines) return;
+function getTouchPos(evt) {
     const rect = canvas.getBoundingClientRect();
-    const pos = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
+    return {
+        x: evt.touches[0].clientX - rect.left,
+        y: evt.touches[0].clientY - rect.top
     };
-    const point = getClosestPoint(pos);
+}
+
+canvas.addEventListener('mousedown', (event) => {
+    handleStart(event.clientX, event.clientY);
+});
+
+canvas.addEventListener('touchstart', (event) => {
+    const pos = getTouchPos(event);
+    handleStart(pos.x, pos.y);
+    event.preventDefault();
+});
+
+function handleStart(x, y) {
+    if (lines.length >= maxLines) return;
+    const point = getClosestPoint({ x, y });
     if (point) {
         drawing = true;
         lastPoint = point;
     }
-});
+}
 
 canvas.addEventListener('mousemove', (event) => {
-    if (!drawing || lines.length >= maxLines) return;
-    const rect = canvas.getBoundingClientRect();
-    const pos = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
-    };
-    drawPoints();
-    lines.forEach(line => drawLine(line.from, line.to, true));
-    drawLine(lastPoint, pos);
+    handleMove(event.clientX, event.clientY);
 });
 
+canvas.addEventListener('touchmove', (event) => {
+    const pos = getTouchPos(event);
+    handleMove(pos.x, pos.y);
+    event.preventDefault();
+});
+
+function handleMove(x, y) {
+    if (!drawing || lines.length >= maxLines) return;
+    drawPoints();
+    lines.forEach(line => drawLine(line.from, line.to, true));
+    drawLine(lastPoint, { x, y });
+}
+
 canvas.addEventListener('mouseup', (event) => {
+    handleEnd(event.clientX, event.clientY);
+});
+
+canvas.addEventListener('touchend', (event) => {
+    const pos = getTouchPos(event);
+    handleEnd(pos.x, pos.y);
+    event.preventDefault();
+});
+
+function handleEnd(x, y) {
     if (!drawing || lines.length >= maxLines) return;
     drawing = false;
-    const rect = canvas.getBoundingClientRect();
-    const pos = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
-    };
-    const point = getClosestPoint(pos);
+    const point = getClosestPoint({ x, y });
     if (point && point !== lastPoint) {
         lines.push({ from: lastPoint, to: point });
         drawPoints();
         lines.forEach(line => drawLine(line.from, line.to, true));
         checkWinCondition();
     }
-});
+}
 
 createPoints();
 drawPoints();
