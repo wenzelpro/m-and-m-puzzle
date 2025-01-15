@@ -3,19 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>6-Point Star Puzzle</title>
+    <title>4x4 Grid Puzzle</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        canvas {
+            border: 1px solid black;
+        }
+
+        #qrCode {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Draw the 6-Point Star Puzzle</h1>
-    <p>Draw a continuous line through all points to reveal the QR code.</p>
+    <h1>4x4 Grid Path Puzzle</h1>
+    <canvas id="puzzleCanvas" width="400" height="400"></canvas>
+    <img id="qrCode" src="qr-code.png" alt="QR Code" style="display:none;">
+    <script>
+        const canvas = document.getElementById('puzzleCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 4;
+        const cellSize = canvas.width / gridSize;
+        let drawing = false;
+        let points = [];
 
-    <canvas id="starCanvas"></canvas>
-    <div id="qrCodeContainer" style="display:none;">
-        <p>Congratulations! Here's your prize:</p>
-        <img id="qrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=YouWon!" alt="QR Code">
-    </div>
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i <= gridSize; i++) {
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, canvas.height);
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(canvas.width, i * cellSize);
+            }
+            ctx.stroke();
+        }
 
-    <script src="script.js"></script>
+        canvas.addEventListener('mousedown', (event) => {
+            drawing = true;
+            points = [];
+            points.push({ x: event.offsetX, y: event.offsetY });
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (!drawing) return;
+            ctx.lineTo(event.offsetX, event.offsetY);
+            ctx.stroke();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+            // Add QR code reveal logic here
+        });
+
+        drawGrid();
+    </script>
 </body>
 </html>
