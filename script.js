@@ -1,95 +1,100 @@
 const canvas = document.getElementById('puzzleCanvas');
 const ctx = canvas.getContext('2d');
-const gridSize = 4;
-const cellSize = canvas.width / gridSize;
+const points = [];
+const lines = [];
+const maxLines = 4;
 let drawing = false;
-let points = [];
 let lastPoint = null;
-let drawTimeout;
 
-function drawGrid() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i <= gridSize; i++) {
-        ctx.moveTo(i * cellSize, 0);
-        ctx.lineTo(i * cellSize, canvas.height);
-        ctx.moveTo(0, i * cellSize);
-        ctx.lineTo(canvas.width, i * cellSize);
-    }
-    ctx.stroke();
-}
+const gridSize = 3;
+const cellSize = canvas.width / (gridSize + 1);
 
-drawGrid();
-
-function getTouchPos(evt) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-        x: evt.touches[0].clientX - rect.left,
-        y: evt.touches[0].clientY - rect.top
-    };
-}
-
-function snapToGrid(pos) {
-    return {
-        x: Math.round(pos.x / cellSize) * cellSize,
-        y: Math.round(pos.y / cellSize) * cellSize
-    };
-}
-
-function drawDashedLine(from, to) {
-    ctx.setLineDash([10, 10]);
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
-    ctx.stroke();
-}
-
-function drawSolidLine(from, to) {
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
-    ctx.stroke();
-}
-
-function fillCell(pos) {
-    ctx.fillStyle = 'lightgreen';
-    ctx.fillRect(pos.x - cellSize / 2, pos.y - cellSize / 2, cellSize, cellSize);
-}
-
-canvas.addEventListener('touchstart', (event) => {
-    event.preventDefault();
-    drawing = true;
-    lastPoint = snapToGrid(getTouchPos(event));
-    points.push(lastPoint);
-});
-
-canvas.addEventListener('touchmove', (event) => {
-    if (!drawing) return;
-    event.preventDefault();
-    const currentPos = snapToGrid(getTouchPos(event));
-
-    if (lastPoint && (currentPos.x !== lastPoint.x && currentPos.y !== lastPoint.y)) {
-        return;
-    }
-
-    drawGrid();
-    points.forEach((p, index) => {
-        if (index > 0) {
-            drawSolidLine(points[index - 1], p);
+function createPoints() {
+    points.length = 0;
+    for (let row = 1; row <= gridSize; row++) {
+        for (let col = 1; col <= gridSize; col++) {
+            points.push({
+                x: col * cellSize,
+                y: row * cellSize
+            });
         }
+    }
+}
+
+function drawPoints() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    points.forEach(point => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+        ctx.fill();
     });
-    drawDashedLine(lastPoint, currentPos);
+}
 
-    clearTimeout(drawTimeout);
-    drawTimeout = setTimeout(() => {
-        points.push(currentPos);
-        drawSolidLine(lastPoint, currentPos);
-        fillCell(currentPos);
-        lastPoint = currentPos;
-    }, 1000);
+function getClosestPoint(pos) {
+    return points.find(point => {
+        const dx = point.x - pos.x;
+        const dy = point.y - pos.y;
+        return Math.sqrt(dx * dx + dy * dy) < 15;
+    });
+}
+
+function drawLine(from, to, solid = false) {
+    ctx.setLineDash(solid ? [] : [10, 10]);
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+}
+
+function checkWinCondition() {
+    if (lines.length === maxLines) {
+        alert('Puzzle completed! Check if all points are connected.');
+    }
+}
+
+canvas.addEventListener('mousedown', (event) => {
+    if (lines.length >= maxLines) return;
+    const rect = canvas.getBoundingClientRect();
+    const pos = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+    };
+    const point = getClosestPoint(pos);
+    if (point) {
+        drawing = true;
+        lastPoint = point;
+    }
 });
 
-canvas.addEventListener('touchend', () => {
-    clearTimeout(drawTimeout);
+canvas.addEventListener('mousemove', (event) => {
+    if (!drawing || lines.length >= maxLines) return;
+    const rect = canvas.getBoundingClientRect();
+    const pos = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+    };
+    drawPoints();
+    lines.forEach(line => drawLine(line.from, line.to, true));
+    drawLine(lastPoint, pos);
+});
+
+canvas.addEventListener('mouseup', (event) => {
+    if (!drawing || lines.length >= maxLines) return;
     drawing = false;
+    const rect = canvas.getBoundingClientRect();
+    const pos = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+    };
+    const point = getClosestPoint(pos);
+    if (point && point !== lastPoint) {
+        lines.push({ from: lastPoint, to: point });
+        drawPoints();
+        lines.forEach(line => drawLine(line.from, line.to, true));
+        checkWinCondition();
+    }
 });
+
+createPoints();
+drawPoints();
