@@ -39,7 +39,7 @@ function drawLine(from, to, solid = false) {
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
-    checkCrossedPoints(from, to);
+    if (solid) checkCrossedPoints(from, to);
 }
 
 function checkCrossedPoints(from, to) {
@@ -114,6 +114,7 @@ function handleEnd(x, y) {
     drawing = false;
     drawLine(lastPoint, { x, y }, true);
     lines.push({ from: lastPoint, to: { x, y } });
+    lastPoint = { x, y }; // Allow the next line to start from the endpoint
     drawPoints();
     checkWinCondition();
 }
