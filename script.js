@@ -5,6 +5,7 @@ const lines = [];
 const maxLines = 4;
 let drawing = false;
 let lastPoint = null;
+let drawTimeout;
 
 const gridSize = 3;
 const cellSize = canvas.width / (gridSize + 1);
@@ -109,12 +110,12 @@ canvas.addEventListener('touchend', (event) => {
 
 function handleEnd(x, y) {
     if (!drawing || lines.length >= maxLines) return;
-    drawing = false;
     const point = getClosestPoint({ x, y });
     if (point && point !== lastPoint) {
+        drawLine(lastPoint, point, true);
         lines.push({ from: lastPoint, to: point });
-        drawPoints();
-        lines.forEach(line => drawLine(line.from, line.to, true));
+        lastPoint = point;
+        drawing = false;
         checkWinCondition();
     }
 }
