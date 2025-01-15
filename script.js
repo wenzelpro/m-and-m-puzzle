@@ -4,6 +4,8 @@ const gridSize = 4;
 const cellSize = canvas.width / gridSize;
 let drawing = false;
 let points = [];
+let lastPoint = null;
+let drawTimeout;
 
 function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -16,6 +18,8 @@ function drawGrid() {
     ctx.stroke();
 }
 
+drawGrid();
+
 function getTouchPos(evt) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -24,27 +28,68 @@ function getTouchPos(evt) {
     };
 }
 
+function snapToGrid(pos) {
+    return {
+        x: Math.round(pos.x / cellSize) * cellSize,
+        y: Math.round(pos.y / cellSize) * cellSize
+    };
+}
+
+function drawDashedLine(from, to) {
+    ctx.setLineDash([10, 10]);
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+}
+
+function drawSolidLine(from, to) {
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+}
+
+function fillCell(pos) {
+    ctx.fillStyle = 'lightgreen';
+    ctx.fillRect(pos.x - cellSize / 2, pos.y - cellSize / 2, cellSize, cellSize);
+}
+
 canvas.addEventListener('touchstart', (event) => {
     event.preventDefault();
     drawing = true;
-    points = [];
-    const pos = getTouchPos(event);
-    points.push(pos);
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    lastPoint = snapToGrid(getTouchPos(event));
+    points.push(lastPoint);
 });
 
 canvas.addEventListener('touchmove', (event) => {
     if (!drawing) return;
     event.preventDefault();
-    const pos = getTouchPos(event);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
+    const currentPos = snapToGrid(getTouchPos(event));
+
+    if (lastPoint && (currentPos.x !== lastPoint.x && currentPos.y !== lastPoint.y)) {
+        return;
+    }
+
+    drawGrid();
+    points.forEach((p, index) => {
+        if (index > 0) {
+            drawSolidLine(points[index - 1], p);
+        }
+    });
+    drawDashedLine(lastPoint, currentPos);
+
+    clearTimeout(drawTimeout);
+    drawTimeout = setTimeout(() => {
+        points.push(currentPos);
+        drawSolidLine(lastPoint, currentPos);
+        fillCell(currentPos);
+        lastPoint = currentPos;
+    }, 1000);
 });
 
 canvas.addEventListener('touchend', () => {
+    clearTimeout(drawTimeout);
     drawing = false;
-    // Add QR code reveal logic here if needed
 });
-
-drawGrid();
